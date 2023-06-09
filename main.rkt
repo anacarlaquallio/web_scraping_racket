@@ -1,52 +1,48 @@
 #lang racket
-
 ; Carrega bibliotecas
 (require net/url)
-(require html)
+(require sxml/sxpath)
+(require html-parsing)
+(require racket/string)
 
-; Renomeia as bibliotecas para evitar conflitos de nome
-; entre as funções e símbolos 
+; Renomeia as bibliotecas para evitar conflitos de nome entre as funções e símbolos 
 (require (prefix-in h: html)
          (prefix-in x: xml))
 
-; Extrai conteúdo HTML de uma página e converte em string 
-(define an-html
-  (h:read-xhtml
-   (open-input-string
-    (string-append (bytes->string/utf-8 (port->bytes (get-pure-port (string->url "https://docs.racket-lang.org/sxml-intro/index.html")))))
-    )
-  )
-)
+; Palavra-chave para web scraping
+(define keyword "html")
 
-; Define uma função que recebe o conteúdo HTML e retorna lista de strings
-; A função extract-pcdata-from-element é chamada recursivamente para processar os elementos
-(define (extract-pcdata some-content)
-  (cond 
-   [(x:pcdata? some-content)
-    (list (x:pcdata-string some-content))]
-   [(x:entity? some-content) (list)]
-   [else
-    (extract-pcdata-from-element some-content)]
-  )
-)
+; URL base
+(define base-url "https://docs.racket-lang.org/search/index.html?q=")
 
-; Verificação do HTML e concatenação de todas as listas
-; Percore extrutura hierárquica do HTML
-(define (extract-pcdata-from-element an-html-element)
-  (match an-html-element
-    [(struct h:html-full (attributes content))
-     (apply append (map extract-pcdata content))]
-    [(struct h:html-element (attributes))
-     '()]
-  )
-)
+; Concatenação da palavra chave com URL
+(define (replace-whitespace-with-hyphen keyword)
+  (string-replace keyword " " "-"))
+(define modified-keyword
+  (if (string-contains? keyword " ")
+      (replace-whitespace-with-hyphen keyword)
+      keyword))
 
-; Filtra listas que contém apenas uma string
-(define filtered-list
-  (filter (lambda (str)
-            (> (length (string-split str)) 1))
-          (extract-pcdata an-html))
-)
+; Função com URL válida
+(define url-with-keyword (string-append base-url modified-keyword))
+
+; Extração de HTML em uma expressão XML
+(define my-html
+  (html->xexp
+   (get-pure-port
+    (string->url url-with-keyword))))
+
+; Função auxiliar recursiva para obter os parágrafos
+(define (get-paragraphs-as-string lst)
+  (cond
+    ((null? lst) "")  ; Caso base: lista vazia
+    (else
+     (string-append (car lst) "\n" (get-paragraphs-as-string (cdr lst))))))
+
+; Obter os parágrafos como uma string
+(define paragraphs-string (get-paragraphs-as-string ((sxpath "//p/text()") my-html)))
+; Obter titulo como string
+(define title-string (get-paragraphs-as-string ((sxpath "/html/head/title/text()") my-html)))
 
 ; Função que gera HTML das listas filtradas
 (define output-html
@@ -55,7 +51,10 @@
    "<head><title>Resultado do Web Scraping</title></head>"
    "<div align='center'><h2>🖤 Verifique o web scraping criado 🖤</h2></div>"
    "<body>"
-   "<div>" (apply string-append (map (lambda (str) (string-append "<p>" str "</p>")) filtered-list)) "</div>"
+   "<h3>Título da Página:</h3>"
+   "<div>" title-string "</div>"
+   "<h3>Parágrafos:</h3>"
+   "<div>" paragraphs-string "</div>"
    "</body>"
    "</html>"
   )
@@ -73,13 +72,6 @@
         (lambda (out-port)
           (display output-html out-port))
       )
-      
       (printf "O resultado foi salvo no arquivo ~a\n" output-file)
     )
 )
-
-; Chama o HTML gerado, sem filtros
-; (printf "~s\n" (extract-pcdata an-html))
- 
-; Exibe o HTML com o filtro 
-;(printf "~s\n" filtered-list)
