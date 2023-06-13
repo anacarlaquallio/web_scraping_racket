@@ -41,11 +41,10 @@
     (string-append
      "<html>\n"
      "  <head>\n<title>Resultado do Web Scraping</title>\n</head>\n"
-     "  <div align='center'>\n<h2>🖤 Verifique o web scraping criado 🖤</h2>\n</div>\n"
      "  <body>\n"
-     "    <h3>Título da Página:</h3>\n"
+     "    <h3>🌺 Título da Página: </h3>"
      "    <div>" title-string "</div>\n"
-     "    <h3>Lista de flores com a palavra chave " keyword ":</h3>\n"
+     "    <h3>Lista de flores com a palavra-chave " keyword ":</h3>\n"
      "    <ul>\n" paragraphs-string "    </ul>\n"
      "  </body>\n"
      "</html>\n"
