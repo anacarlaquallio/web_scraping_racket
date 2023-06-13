@@ -18,3 +18,6 @@ raco pkg install sxml
 raco pkg install html-parsing
 ```
 Depois, só digitar racket caminho_arquivo_main.rkt no terminal.
+
+## Paralelismo em Racket
+Neste código, apesar de ser gerado em um mesmo arquivo HTML, a requisição do par URL e XPath é feito de forma sequencial. Porém, Racket permite paralelismo por meio da biblioteca racket/future. Uma possibilidade seria utilizar o paralelismo para fazer a requisição HTTP ao site, todavia o sincronismo deveria ser feito para a geração e escrita no arquivo resultado.html.
